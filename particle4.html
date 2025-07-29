@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dancing Particles</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        #title {
+            position: fixed;
+            color: rgba(255, 255, 255, 0.7);
+            z-index: 2;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">Танцующие частицы</div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Настройки
+            const PARTICLE_COUNT = 200;
+            const MAX_RADIUS = 5;
+            const DANCE_SPEED = 0.005;
+            const COLOR_PALETTE = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFBE0B', 
+                '#FB5607', '#8338EC', '#3A86FF', '#FF006E'
+            ];
+            
+            // Инициализация
+            function init() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                // Создаем частицы
+                const particles = [];
+                const center = {
+                    x: canvas.width / 2,
+                    y: canvas.height / 2
+                };
+                
+                for (let i = 0; i < PARTICLE_COUNT; i++) {
+                    const angle = (i / PARTICLE_COUNT) * Math.PI * 2;
+                    const distance = Math.random() * Math.min(canvas.width, canvas.height) * 0.4;
+                    
+                    particles.push({
+                        x: center.x + Math.cos(angle) * distance,
+                        y: center.y + Math.sin(angle) * distance,
+                        size: Math.random() * MAX_RADIUS + 1,
+                        baseSize: Math.random() * MAX_RADIUS + 1,
+                        color: COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)],
+                        angle: angle,
+                        speed: Math.random() * 0.02 + 0.01,
+                        orbitRadius: distance * (0.8 + Math.random() * 0.4),
+                        time: Math.random() * 100,
+                        dancePattern: Math.floor(Math.random() * 3) // 0-2
+                    });
+                }
+                
+                return particles;
+            }
+            
+            let particles = init();
+            let time = 0;
+            
+            // Анимация
+            function animate() {
+                time += DANCE_SPEED;
+                
+                // Затемнение для эффекта шлейфа
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Обновляем и рисуем частицы
+                particles.forEach(p => {
+                    p.time += p.speed;
+                    
+                    // Разные паттерны "танца"
+                    switch (p.dancePattern) {
+                        case 0: // Круги с пульсацией
+                            p.angle += p.speed;
+                            p.size = p.baseSize * (0.7 + Math.sin(p.time * 2) * 0.3);
+                            break;
+                            
+                        case 1: // Волны
+                            p.angle += Math.sin(p.time * 0.5) * 0.1;
+                            p.size = p.baseSize * (0.5 + Math.abs(Math.sin(p.time)) * 0.5);
+                            break;
+                            
+                        case 2: // Спирали
+                            p.angle += p.speed;
+                            p.orbitRadius = p.orbitRadius * (0.95 + Math.sin(p.time * 0.3) * 0.05);
+                            p.size = p.baseSize * (0.6 + Math.sin(p.time * 1.5) * 0.4);
+                            break;
+                    }
+                    
+                    // Центр притяжения (может двигаться)
+                    const center = {
+                        x: canvas.width / 2 + Math.sin(time * 0.3) * canvas.width * 0.1,
+                        y: canvas.height / 2 + Math.cos(time * 0.2) * canvas.height * 0.1
+                    };
+                    
+                    // Новая позиция
+                    p.x = center.x + Math.cos(p.angle) * p.orbitRadius;
+                    p.y = center.y + Math.sin(p.angle) * p.orbitRadius;
+                    
+                    // Рисуем частицу с эффектом свечения
+                    const gradient = ctx.createRadialGradient(
+                        p.x, p.y, 0,
+                        p.x, p.y, p.size * 2
+                    );
+                    gradient.addColorStop(0, p.color);
+                    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    
+                    // Ядро частицы
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2);
+                    ctx.fillStyle = 'white';
+                    ctx.fill();
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            
+            // Реакция на ресайз
+            window.addEventListener('resize', () => {
+                particles = init();
+            });
+            
+            animate();
+        });
+    </script>
+</body>
+</html>
